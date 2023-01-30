@@ -7,14 +7,16 @@ export const GET = async () => {
 		Object.entries(import.meta.glob('$lib/notes/*.md')).map(async ([path, page]) => {
 			const pagedata = await page();
 			const { html } = pagedata.default.render();
+			const regexp = /<a\s[\w="\s]*href="([^>\\"]+)[^>]*">((?:.(?!<\/a>))*.)<\/a>/g;
+
+			const links = [...html.matchAll(regexp)].map(([, href]) => {
+				return { source: path, target: href };
+			});
 
 			const slug = path.split('/').pop().split('.').shift();
-			return { slug, html, path };
+			return links;
 		})
-	).then((posts) => {
-		console.log(posts);
-		return posts.sort((a, b) => new Date(b.date) - new Date(a.date));
-	});
+	).then((data) => data.flat());
 
 	return json(data);
 };
